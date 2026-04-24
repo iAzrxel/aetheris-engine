@@ -65,7 +65,10 @@ async def on_message(message: discord.Message):
     
     target = message.mentions[0]
 
-    reason = " ".join(args[2:]) if len(args) > 2 else 'sem motivo informado'
+    reason = " ".join(args[2:]) if len(args) > 2 else 'Sem motivo informado'
+
+    if target == message.author:
+        await message.channel.send('Você não pode se avisar.')
 
     try:
         await target.send(
@@ -73,8 +76,8 @@ async def on_message(message: discord.Message):
            f"Motivo: {reason}"
         )
     except discord.Forbidden:
-        await message.channel.send('não foi possivel enviar DM para o usuário.')
+        await message.channel.send('Não foi possivel enviar DM para o usuário.')
     
-    await message.channel.send(f'{target.mention} recebeu um alerta da moderação ⚠️')
+    await message.channel.send(f'{target.mention} Recebeu um alerta da moderação ⚠️')
 
 client.run(Config.DISCORD_TOKEN)
