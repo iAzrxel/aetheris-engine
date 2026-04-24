@@ -73,6 +73,8 @@ async def on_message(message: discord.Message):
     
     if target == client.user:
         await message.channel.send('Você está tentando me avisar? :scream:')
+        return
+    
     try:
         await target.send(
            f"⚠️ Você recebeu um aviso no servidor **{message.guild.name}**.\n"
