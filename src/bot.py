@@ -56,11 +56,11 @@ async def on_message(message: discord.Message):
 
     if command == 'warn':
         if not message.author.guild_permissions.manage_messages:
-            await message.send('Você não tem permissão para usar esse comando.')
+            await message.channel.send('Você não tem permissão para usar esse comando.')
             return
         
     if len(message.mentions) == 0:
-        await message.send('Use: ".warn @user <motivo>"')
+        await message.channel.send('Use: `.warn @user <motivo>`')
         return
     
     target = message.mentions[0]
@@ -69,7 +69,10 @@ async def on_message(message: discord.Message):
 
     if target == message.author:
         await message.channel.send('Você não pode se avisar.')
-
+        return
+    
+    if target == client.user:
+        await message.channel.send('Você está tentando me avisar? :scream:')
     try:
         await target.send(
            f"⚠️ Você recebeu um aviso no servidor **{message.guild.name}**.\n"
