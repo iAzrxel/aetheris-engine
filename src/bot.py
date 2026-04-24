@@ -48,4 +48,33 @@ async def on_message(message: discord.Message):
     if message.content.lower().strip() == 'ping':
         await message.channel.send(f'Pong {message.author.mention} ! me chamou?')
 
+    content = message.content.strip()
+    if not content.startswith(Config.PREFIX):
+        return
+    args = content[len(Config.PREFIX):].split()
+    command = args[0].lower()
+
+    if command == 'warn':
+        if not message.author.guild_permissions.manage_messages:
+            await message.send('Você não tem permissão para usar esse comando.')
+            return
+        
+    if len(message.mentions) == 0:
+        await message.send('Use: ".warn @user <motivo>"')
+        return
+    
+    target = message.mentions[0]
+
+    reason = " ".join(args[2:]) if len(args) > 2 else 'sem motivo informado'
+
+    try:
+        await target.send(
+           f"⚠️ Você recebeu um aviso no servidor **{message.guild.name}**.\n"
+           f"Motivo: {reason}"
+        )
+    except discord.Forbidden:
+        await message.channel.send('não foi possivel enviar DM para o usuário.')
+    
+    await message.channel.send(f'{target.mention} recebeu um alerta da moderação ⚠️')
+
 client.run(Config.DISCORD_TOKEN)
