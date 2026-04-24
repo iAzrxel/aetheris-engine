@@ -59,9 +59,9 @@ async def on_message(message: discord.Message):
             await message.channel.send('Você não tem permissão para usar esse comando.')
             return
         
-    if len(message.mentions) == 0:
-        await message.channel.send('Use: `.warn @user <motivo>`')
-        return
+        if len(message.mentions) == 0:
+            await message.channel.send('Use: `.warn @user <motivo>`')
+            return
     
     target = message.mentions[0]
 
