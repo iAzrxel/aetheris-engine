@@ -70,7 +70,7 @@ async def handle_warn(message: discord.Message, args: list[str], client: discord
         await message.channel.send(f'{target.mention} foi mutado por **{mute_minutes} minutos.**')
         return
 
-    warn_id = create_warn(target.id, message.guild.id, reason)
+    warn_id = create_warn(target.id, message.guild.id, message.author.id, reason)
     total_warns = count_warns(target.id, message.guild.id)
     cycle_warns = count_warns_since_last_punishment(target.id, message.guild.id)
 
@@ -115,10 +115,10 @@ async def handleclear_warns(message):
     
     target = message.mentions[0]
 
-    deleted_count = clear_warns(target.id, message.guild.id)
+    deleted_count = clear_warns(target.id, message.guild.id, message.author.id)
 
     if deleted_count == 0:
         await message.channel.send(f'{target.mention} não tinha warnings para limpar ✅')
         return
 
-    await message.channel.send(f'Foram removidos **{deleted_count}** warning(s) de {target.mention} ✅')
+    await message.channel.send(f'{target.mention} teve **{deleted_count}** warning(s) revogado(s) por {message.author.mention} 🧹')

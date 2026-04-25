@@ -36,16 +36,16 @@ def ensure_guild(guild_id: int, name: str):
     conn.close()
 
 
-def create_warn(user_id: int, guild_id: int, reason: str):
+def create_warn(user_id: int, guild_id: int, moderator_id: int, reason: str):
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute(
         """
-        INSERT INTO warns (user_id, guild_id, reason)
-        VALUES (%s, %s, %s)
+        INSERT INTO warns (user_id, guild_id, moderator_id, reason)
+        VALUES (%s, %s, %s, %s)
         """,
-        (user_id, guild_id, reason)
+        (user_id, guild_id, moderator_id, reason)
     )
 
     conn.commit()
@@ -65,7 +65,7 @@ def count_warns(user_id: int, guild_id: int):
         """
         SELECT COUNT(*)
         FROM warns
-        WHERE user_id = %s AND guild_id = %s
+        WHERE user_id = %s AND guild_id = %s AND revoked_at IS NULL
         """,
         (user_id, guild_id)
     )
@@ -146,23 +146,26 @@ def create_punishment(user_id: int, guild_id: int, punishment_type: str, reason:
     cursor.close()
     conn.close()
 
-def clear_warns(user_id: int, guild_id: int):
+def clear_warns(user_id: int, guild_id: int, moderator_id: int):
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute(
         """
-        DELETE FROM warns
+        UPDATE warns
+        SET revoked_at = NOW(),
+            revoked_by = %s
         WHERE user_id = %s
         AND guild_id = %s
+        AND revoked_at IS NULL
         """,
-        (user_id, guild_id)
+        (moderator_id, user_id, guild_id)
     )
 
     conn.commit()
-    deleted_count = cursor.rowcount
+    affected = cursor.rowcount
 
     cursor.close()
     conn.close()
 
-    return deleted_count
+    return affected
