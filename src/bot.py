@@ -1,6 +1,10 @@
 import discord
 from config import Config
-from cogs.moderation import handle_warn
+from cogs.moderation import (
+    handle_warn,
+    handle_warnings,
+    handleclear_warns
+) 
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -70,5 +74,12 @@ async def on_message(message: discord.Message):
         await handle_warn(message, args, client)
         return
 
+    if command == "warnings":
+        await handle_warnings(message)
+        return
+
+    if command == "clearwarns":
+        await handleclear_warns(message)
+        return
 
 client.run(Config.DISCORD_TOKEN)

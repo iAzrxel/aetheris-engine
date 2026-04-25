@@ -76,3 +76,93 @@ def count_warns(user_id: int, guild_id: int):
     conn.close()
 
     return total
+
+def count_warns_since_last_punishment(user_id: int, guild_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM warns
+        WHERE user_id = %s
+        AND guild_id = %s
+        AND created_at > COALESCE(
+            (
+                SELECT MAX(created_at)
+                FROM punishments
+                WHERE user_id = %s
+                AND guild_id = %s
+            ),
+            '1970-01-01'
+        )
+        """,
+        (user_id, guild_id, user_id, guild_id)
+    )
+
+    total = cursor.fetchone()[0]
+
+    cursor.close()
+    conn.close()
+
+    return total
+
+def count_mutes(user_id: int, guild_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM punishments
+        WHERE user_id = %s
+        AND guild_id = %s
+        AND type = 'mute'
+        """,
+        (user_id, guild_id)
+    )
+
+    total = cursor.fetchone()[0]
+
+    cursor.close()
+    conn.close()
+
+    return total
+
+def create_punishment(user_id: int, guild_id: int, punishment_type: str, reason: str, duration_minutes=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO punishments (user_id, guild_id, type, duration_minutes, reason)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (user_id, guild_id, punishment_type, duration_minutes, reason)
+    )
+
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+def clear_warns(user_id: int, guild_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        DELETE FROM warns
+        WHERE user_id = %s
+        AND guild_id = %s
+        """,
+        (user_id, guild_id)
+    )
+
+    conn.commit()
+    deleted_count = cursor.rowcount
+
+    cursor.close()
+    conn.close()
+
+    return deleted_count
