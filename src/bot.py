@@ -5,6 +5,7 @@ from cogs.moderation import (
     handle_warnings,
     handleclear_warns
 ) 
+from cogs.economy import handle_balance, handle_work, handle_deposit, handle_withdraw
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -81,5 +82,18 @@ async def on_message(message: discord.Message):
     if command == "clearwarns":
         await handleclear_warns(message)
         return
-
+    
+    if command in ["bal", "balance"]:
+        await handle_balance(message)
+        return
+    
+    if command == 'work':
+        await handle_work(message)
+        return
+    if command in ["dep", "deposit"]:
+        await handle_deposit(message, args)
+        return
+    if command in ["with", "withdraw"]:
+        await handle_withdraw(message, args)
+    
 client.run(Config.DISCORD_TOKEN)
