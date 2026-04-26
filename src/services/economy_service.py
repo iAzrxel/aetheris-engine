@@ -111,3 +111,40 @@ def withdraw_money(user_id: int, guild_id: int, amount: int):
     conn.close()
 
     return affected > 0
+
+def rob_user(user_id: int, target_id: int, guild_id: int, amount: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        update economy
+        set balance = balance - %s
+        where user_id = %s
+        and guild_id = %s
+        and balance >= %s
+        """, (amount, target_id, guild_id, amount)
+    )
+
+    if cursor.rowcount == 0:
+        conn.rollback()
+        cursor.close()
+        conn.close()
+        return False
+    
+    cursor.execute(
+        """
+        update economy 
+        set balance = balance + %s
+        where user_id = %s
+        and guild_id = %s
+        """, (amount, user_id, guild_id)
+    )
+
+    conn.commit()
+    affected = cursor.rowcount
+
+    cursor.close()
+    conn.close()
+
+    return affected > 0

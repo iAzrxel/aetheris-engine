@@ -5,7 +5,7 @@ from cogs.moderation import (
     handle_warnings,
     handleclear_warns
 ) 
-from cogs.economy import handle_balance, handle_work, handle_deposit, handle_withdraw
+from cogs.economy import handle_balance, handle_work, handle_deposit, handle_withdraw, handle_rob_user
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -95,5 +95,9 @@ async def on_message(message: discord.Message):
         return
     if command in ["with", "withdraw"]:
         await handle_withdraw(message, args)
+        return
+    if command == "rob":
+        await handle_rob_user(message)
+        return
     
 client.run(Config.DISCORD_TOKEN)

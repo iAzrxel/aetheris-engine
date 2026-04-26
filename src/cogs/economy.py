@@ -1,7 +1,8 @@
-from services.economy_service import ensure_account, get_balance, get_last_work, update_work, deposit_money, withdraw_money
+from services.economy_service import ensure_account, get_balance, get_last_work, update_work, deposit_money, withdraw_money, rob_user
 from services.moderation_service import ensure_user, ensure_guild
 import discord
 import datetime
+import random
 
 async def handle_balance(message):
     if len(message.mentions) > 0:
@@ -73,7 +74,7 @@ async def handle_work(message):
 
     update_work(user.id, message.guild.id, salary)
 
-    embed = discord.Embed(description=f'Você trabalhou e recebeu **${salary:,}**', color=0x88E788)
+    embed = discord.Embed(description=f'Você trabalhou e recebeu **${salary:,}**', color=0x00FF00 )
     embed.set_author(
         name=user.name,
         icon_url=user.display_avatar.url
@@ -88,7 +89,17 @@ async def handle_deposit(message, args):
         ensure_account(user.id, message.guild.id)
 
         if len(args) < 2:
-            await message.channel.send("Use: `.deposit <valor>`, `.deposit half` ou `.deposit all`")
+            embed = discord.Embed(description=f'❌ Comando invalido!', color=0xFF0000)
+            embed.set_author(
+                name=user.name,
+                icon_url=user.display_avatar.url
+            )
+            embed.add_field(
+                name='Use:',
+                value='`.dep <amount, half ou all>`',
+                inline=True
+            )
+            await message.channel.send(embed=embed)
             return
 
         balance, bank = get_balance(user.id, message.guild.id)
@@ -96,28 +107,54 @@ async def handle_deposit(message, args):
         if args[1].lower() == "all":
             amount = balance
         elif args[1].lower() == "half":
-            amount = (balance / 2)
+            amount = (balance // 2)
         else:
-            if not args[1].isdigit():
-                await message.channel.send('Informe um valor valido')
+            try:
+                amount = int(args[1])
+            except ValueError:
+                embed = discord.Embed(description=f'❌ Comando invalido!', color=0xFF0000)
+                embed.set_author(
+                    name=user.name,
+                    icon_url=user.display_avatar.url
+                )
+                embed.add_field(
+                    name='Use:',
+                    value='`.dep <amount, half ou all>`',
+                    inline=True
+                )
+                await message.channel.send(embed=embed)
                 return
-            amount = int(args[1])
-        
+                    
         if amount <= 0:
-            await message.channel.send('O valor precisa ser maior que 0.')
-            return
+            amount = abs(amount)
         
         if amount > balance:
-            await message.channel.send('Você não tem esse valor em mãos.')
-            return
+              embed = discord.Embed(description=f'❌ Você não tem esse valor em mãos.', color=0xFF0000)
+              embed.set_author(
+              name=user.name,
+              icon_url=user.display_avatar.url                
+              )
+              await message.channel.send(embed=embed)
+              return
         
         success = deposit_money(user.id, message.guild.id, amount)
 
         if not success:
-            await message.channel.send('Não foi possivel depositar esse valor.')
-            return
+           embed = discord.Embed(description=f'❌ Você não pode depositar ${amount}.', color=0xFF0000)
+           embed.set_author(
+           name=user.name,
+           icon_url=user.display_avatar.url                
+          )
+           await message.channel.send(embed=embed)
+           return
         
-        await message.channel.send('Sucesso!')
+        embed = discord.Embed(description=f'✅ Depositou ${amount} no seu banco!', color=0x00FF00)
+        embed.set_author(
+            name=user.name,
+            icon_url=user.display_avatar.url
+        )
+        await message.channel.send(embed=embed)
+        return
 
 async def handle_withdraw(message, args):
     user = message.author
@@ -127,32 +164,125 @@ async def handle_withdraw(message, args):
     ensure_account(user.id, message.guild.id)
 
     if len(args) < 2:
-        await message.channel.send('Use: `.withdraw <valor>`, `.withdraw half` ou `.withdraw all`')
-        return
+     embed = discord.Embed(description=f'❌ Comando invalido!', color=0xFF0000)
+     embed.set_author(
+     name=user.name,
+     icon_url=user.display_avatar.url
+     )
+     embed.add_field(
+     name='Use:',
+     value='`.with <amount, half ou all>`',
+     inline=True
+     )
+     await message.channel.send(embed=embed)
+     return
 
     balance, bank = get_balance(user.id, message.guild.id)
 
     if args[1].lower() == 'all':
         amount = bank
     elif args[1].lower() == 'half':
-        amount = (bank / 2)
+        amount = (bank // 2)
     else:
-        if not args[1].isdigit():
-            await message.channel.send('Informe um valor valido.')
-            return
-        amount = int(args[1])
+        try:
+            amount = int(args[1])
+        except ValueError:
+                embed = discord.Embed(description=f'❌ Comando invalido!', color=0xFF0000)
+                embed.set_author(
+                    name=user.name,
+                    icon_url=user.display_avatar.url
+                )
+                embed.add_field(
+                    name='Use:',
+                    value='`.with <amount, half ou all>`',
+                    inline=True
+                )
+                await message.channel.send(embed=embed)
+                return
 
     if amount < 0:
-        await message.channel.send('O valor precisa ser maior que 0.')
-        return
+        amount = abs(amount)
     
     if amount > bank:
-        await message.channel.send('Você não tem esse valor no banco.')
+           embed = discord.Embed(description=f'❌ Você não tem esse valor em mãos.', color=0xFF0000)
+           embed.set_author(
+           name=user.name,  
+           icon_url=user.display_avatar.url                
+          )
+           await message.channel.send(embed=embed)
+           return
 
     success = withdraw_money(user.id, message.guild.id, amount)
 
     if not success:
-        await message.channel.send('Não foi possivel sacar esse valor.')
+       embed = discord.Embed(description=f'❌ Você não pode retirar ${amount}.', color=0xFF0000)
+       embed.set_author(
+       name=user.name,
+       icon_url=user.display_avatar.url                
+     )
+       await message.channel.send(embed=embed)
+       return
+
+    embed = discord.Embed(description=f'✅ Retirou ${amount} do seu banco!', color=0x00FF00)
+    embed.set_author(
+    name=user.name,
+    icon_url=user.display_avatar.url
+  )
+    await message.channel.send(embed=embed)
+    return
+
+async def handle_rob_user(message):
+    user = message.author
+    if len(message.mentions) > 0:
+        target = message.mentions[0]
+    else:
+        embed = discord.Embed(description=f'❌ Comando invalido!', color=0xFF0000)
+        embed.set_author(
+        name=user.name,
+        icon_url=user.display_avatar.url
+        )
+        embed.add_field(
+        name='Use:',
+        value='`.rob <@user>`',
+                    inline=True
+        )
+        await message.channel.send(embed=embed)
+        return
+    
+    ensure_user(user.id, user.name)
+    ensure_guild(message.guild.id, message.guild.name)
+    ensure_account(user.id, message.guild.id)
+
+    ensure_user(target.id, user.name)
+    ensure_account(user.id, message.guild.id)
+
+    balance, bank = get_balance(target.id, message.guild.id)
+
+    if balance < 1:
+        embed = discord.Embed(description=f'❌ Você tentou roubar {target.mention} mas {target.name.lower()} não tem um centavo na carteira.', color=0xFF0000)
+        embed.set_author(
+        name=user.name,  
+        icon_url=user.display_avatar.url                
+        )
+        await message.channel.send(embed=embed)
         return
 
-    await message.channel.send('Sucesso!')
+
+    success = random.random() < 0.6
+    if success:
+        amount = balance * 60 // 100
+        success = rob_user(user.id, target.id, message.guild.id, amount)
+        if success:
+            embed = discord.Embed(description=f'✅ {user.mention} roubou ${amount} de {target.mention}!', color=0x00FF00)
+            embed.set_author(
+            name=user.name,
+            icon_url=user.display_avatar.url
+        )
+            await message.channel.send(embed=embed)
+            return
+        else:
+            await message.channel.send('Erro inesperado.')
+            return
+    else:
+        await message.channel.send('Você não conseguiu roubar e futuramente será punido!')
+        return
