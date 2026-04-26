@@ -24,13 +24,13 @@ async def handle_balance(message):
     )
 
     embed.add_field(
-        name="Cash",
+        name="Carteira",
         value=f'${balance:,}',
         inline=True
     )
 
     embed.add_field(
-        name="Bank",
+        name="Banco",
         value=f'${bank:,}',
         inline=True
     )
