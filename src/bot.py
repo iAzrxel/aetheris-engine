@@ -5,7 +5,7 @@ from cogs.moderation import (
     handle_warnings,
     handleclear_warns
 ) 
-from cogs.economy import handle_balance, handle_work, handle_deposit, handle_withdraw, handle_rob_user
+from cogs.economy import handle_balance, handle_work, handle_deposit, handle_withdraw, handle_rob_user, handle_fines, handle_pay_fines
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -99,5 +99,9 @@ async def on_message(message: discord.Message):
     if command == "rob":
         await handle_rob_user(message)
         return
+    if command == "fines":
+        await handle_fines(message)
+    if command == "payfines":
+        await handle_pay_fines(message)
     
 client.run(Config.DISCORD_TOKEN)

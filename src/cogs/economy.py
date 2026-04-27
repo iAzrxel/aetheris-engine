@@ -1,4 +1,4 @@
-from services.economy_service import ensure_account, get_balance, get_last_work, update_work, deposit_money, withdraw_money, rob_user
+from services.economy_service import ensure_account, get_balance, get_last_work, update_work, deposit_money, withdraw_money, rob_user, create_fine, get_active_fines, pay_fines, get_unpaid_fines_total
 from services.moderation_service import ensure_user, ensure_guild
 import discord
 import datetime
@@ -253,7 +253,7 @@ async def handle_rob_user(message):
     ensure_guild(message.guild.id, message.guild.name)
     ensure_account(user.id, message.guild.id)
 
-    ensure_user(target.id, user.name)
+    ensure_user(target.id, target.name)
     ensure_account(user.id, message.guild.id)
 
     balance, bank = get_balance(target.id, message.guild.id)
@@ -284,5 +284,126 @@ async def handle_rob_user(message):
             await message.channel.send('Erro inesperado.')
             return
     else:
-        await message.channel.send('Você não conseguiu roubar e futuramente será punido!')
+        amount = balance * 40 // 100
+        reason = 'Roubo'
+        create_fine(user.id, message.guild.id, amount, reason)
+
+        embed = discord.Embed(description=f'❌ Você foi pego tentando roubar {target.mention} e vai receber uma multa no valor de ${amount:,}', color=0xFF0000)
+        embed.set_author(
+        name=user.name,  
+        icon_url=user.display_avatar.url                
+        )
+        await message.channel.send(embed=embed)
         return
+    
+async def handle_fines(message):
+    if len(message.mentions) > 0:
+        target = message.mentions[0]
+    else:
+        target = message.author
+
+    fines = get_active_fines(target.id, message.guild.id)
+
+    if not fines:
+        embed = discord.Embed(
+        description=f'✅ {target.mention} não possui multas ativas.',
+        color=0x00FF00
+        )
+        await message.channel.send(embed=embed)
+        return
+    
+    total = sum(fine[1] for fine in fines)
+
+    embed = discord.Embed(
+        title="⚠️ Multas Ativas",
+        description=f'Total: ${total:,}',
+        color=0xFF0000
+    )
+    embed.set_author(
+        name=target.name,
+        icon_url=target.display_avatar.url
+    )
+
+    now = datetime.datetime.now()
+
+    for fine in fines[:5]:
+        _, amount, reason, status, created_at, expires_at = fine
+
+        if status == 'paid':
+            remaining = expires_at - now
+            seconds = max(0, int(remaining.total_seconds()))
+
+            hours = seconds // 3600
+            minutes = (seconds % 3600) // 60
+
+            time_text = f'{hours}h {minutes}m restantes.'
+            status_portuguese = "Pago"
+        else:
+            time_text = "Indeterminado"
+            status_portuguese = "Pendente de pagamento"
+
+        embed.add_field(
+            name=f"${amount:,} - {reason}",
+            value=f"Status: {status_portuguese}\nDuração: {time_text}",
+            inline=False
+        )
+
+    await message.channel.send(embed=embed)
+
+async def handle_pay_fines(message):
+    user = message.author
+
+    ensure_user(user.id, user.name)
+    ensure_guild(message.guild.id, message.guild.name)
+    ensure_account(user.id, message.guild.id)
+
+    total = get_unpaid_fines_total(user.id, message.guild.id)
+
+    if total <= 0:
+        embed = discord.Embed(
+            description='✅ Você não possui multas pendentes.',
+            color=0x00FF00
+        )
+        embed.set_author(
+            name=user.name,
+            icon_url=user.display_avatar.url
+        )
+        await message.channel.send(embed=embed)
+        return
+    
+    balance, bank = get_balance(user.id, message.guild.id)
+
+    if balance < total:
+        embed = discord.Embed(
+            description=f'❌ Você precisa de {total:,} para pagar suas multas.\n Você tem apenas ${balance:,} na sua carteira.',
+            color=0xFF0000
+        )
+        embed.set_author(
+            name = user.name,
+            icon_url=user.display_avatar.url
+        )
+        await message.channel.send(embed=embed)
+        return
+    success = pay_fines(user.id, message.guild.id)
+
+    if not success:
+        embed = discord.Embed(
+            description='❌ Não foi possível pagar suas multas.',
+            color=0xFF0000
+        )
+        embed.set_author(
+            name=user.name,
+            icon_url=user.display_avatar.url
+        )
+        await message.channel.send(embed=embed)
+        return
+    
+    embed = discord.Embed(
+        description=f'✅ Você pagou ${total:,} em multas.\nOs efeitos permanecem ativos por 24h.',
+        color=0x00FF00
+    )
+    embed.set_author(
+        name=user.name,
+        icon_url=user.display_avatar.url
+    )
+    await message.channel.send(embed=embed)
