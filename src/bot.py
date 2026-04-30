@@ -6,6 +6,7 @@ from cogs.moderation import (
     handleclear_warns
 ) 
 from cogs.economy import handle_balance, handle_work, handle_deposit, handle_withdraw, handle_rob_user, handle_fines, handle_pay_fines
+from cogs.tickets import handle_create_ticket
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -101,7 +102,12 @@ async def on_message(message: discord.Message):
         return
     if command == "fines":
         await handle_fines(message)
+        return
     if command == "payfines":
         await handle_pay_fines(message)
+        return
+    if command == "ticket":
+        await handle_create_ticket(message)
+        return
     
 client.run(Config.DISCORD_TOKEN)

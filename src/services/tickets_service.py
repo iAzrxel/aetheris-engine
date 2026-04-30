@@ -40,3 +40,20 @@ def get_open_ticket_by_user(user_id: int, guild_id: int):
     conn.close()
 
     return result
+
+def close_ticket_db(ticket_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        update tickets 
+        set status = 'closed',
+            closed_at = now()
+        where id = %s
+        """, (ticket_id,)
+    )
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
