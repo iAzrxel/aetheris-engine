@@ -122,3 +122,55 @@ async def handleclear_warns(message):
         return
 
     await message.channel.send(f'{target.mention} teve **{deleted_count}** warning(s) revogado(s) por {message.author.mention} 🧹')
+
+async def handle_mute(message, args):
+    moderator = message.author
+    guild = message.guild
+
+    if not moderator.guild_permissions.moderate_members:
+        await message.channel.send("❌ Você não tem permissão para mutar membros.")
+        return
+    if len(message.mentions) == 0 or len(args < 3):
+        await message.channel.send("Use: `.mute <@user> <minutos> <motivo>`")
+        return
+    target = message.mentions[0]
+
+    try:
+        minutes = int(args[2])
+    except ValueError:
+        await message.channel.send("❌ Duração inválida.")
+        return
+
+    if minutes <= 0:
+        await message.channel.send("❌ A duração precisa ser maior que 0.")
+        return
+
+    reason = " ".join(args[3:] if len(args) > 3 else "Sem motivo informado")
+
+    ensure_user(target.id, target.name)
+    ensure_guild(guild.id, guild.name)
+
+    until = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=minutes)
+
+    await target.timeout(until, reason=reason)
+
+    punishment_id = create_punishment(
+        target.id,
+        guild.id,
+        "mute",
+        reason,
+        minutes
+    )
+
+    embed = discord.Embed(
+        description=f"✅ {target.mention} foi mutado por {minutes} minutos.",
+        color=0x00FF00
+    )
+    embed.add_field(name="Motivo", value=reason, inline=False)
+    embed.add_field(name="Case", value=f"#{punishment_id}", inline=True)
+    embed.set_author(
+        name=moderator.name,
+        icon_url=moderator.display_avatar.url
+    )
+
+    await message.channel.send(embed=embed)

@@ -3,7 +3,8 @@ from config import Config
 from cogs.moderation import (
     handle_warn,
     handle_warnings,
-    handleclear_warns
+    handleclear_warns,
+    handle_mute
 ) 
 from cogs.economy import handle_balance, handle_work, handle_deposit, handle_withdraw, handle_rob_user, handle_fines, handle_pay_fines
 from cogs.tickets import handle_create_ticket
@@ -108,6 +109,10 @@ async def on_message(message: discord.Message):
         return
     if command == "ticket":
         await handle_create_ticket(message)
+        return
+    if command == "mute":
+        args = message.content.split()
+        await handle_mute(message, args)
         return
     
 client.run(Config.DISCORD_TOKEN)

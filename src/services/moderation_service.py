@@ -142,9 +142,12 @@ def create_punishment(user_id: int, guild_id: int, punishment_type: str, reason:
     )
 
     conn.commit()
+    punishment_id = cursor.lastrowid
 
     cursor.close()
     conn.close()
+
+    return punishment_id
 
 def clear_warns(user_id: int, guild_id: int, moderator_id: int):
     conn = get_connection()
@@ -169,3 +172,4 @@ def clear_warns(user_id: int, guild_id: int, moderator_id: int):
     conn.close()
 
     return affected
+
