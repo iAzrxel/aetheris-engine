@@ -47,7 +47,7 @@ async def handle_create_ticket(message):
 
             return
         
-    staff_role = await ensure_support_role(guild)
+    staff_role = await ensure_support_role(message)
 
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(read_messages=False),

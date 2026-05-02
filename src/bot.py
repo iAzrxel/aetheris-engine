@@ -4,7 +4,10 @@ from cogs.moderation import (
     handle_warn,
     handle_warnings,
     handleclear_warns,
-    handle_mute
+    handle_mute,
+    handle_purge,
+    handle_kick,
+    handle_ban
 ) 
 from cogs.economy import handle_balance, handle_work, handle_deposit, handle_withdraw, handle_rob_user, handle_fines, handle_pay_fines
 from cogs.tickets import handle_create_ticket
@@ -92,27 +95,49 @@ async def on_message(message: discord.Message):
     if command == 'work':
         await handle_work(message)
         return
+    
     if command in ["dep", "deposit"]:
         await handle_deposit(message, args)
         return
+    
     if command in ["with", "withdraw"]:
         await handle_withdraw(message, args)
         return
+    
     if command == "rob":
         await handle_rob_user(message)
         return
+    
     if command == "fines":
         await handle_fines(message)
         return
+    
     if command == "payfines":
         await handle_pay_fines(message)
         return
+    
     if command == "ticket":
         await handle_create_ticket(message)
         return
+    
     if command == "mute":
         args = message.content.split()
         await handle_mute(message, args)
+        return
+    
+    if command == "purge":
+        args = message.content.split()
+        await handle_purge(message, args)
+        return
+    
+    if command == "kick":
+        args = message.content.split()
+        await handle_kick(message, args)
+        return
+    
+    if command == "ban":
+        args = message.content.split()
+        await handle_ban(message, args)
         return
     
 client.run(Config.DISCORD_TOKEN)

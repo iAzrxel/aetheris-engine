@@ -1,5 +1,6 @@
 import discord
 import datetime
+import asyncio
 from services.moderation_service import (
     ensure_user,
     ensure_guild,
@@ -128,21 +129,29 @@ async def handle_mute(message, args):
     guild = message.guild
 
     if not moderator.guild_permissions.moderate_members:
-        await message.channel.send("❌ Você não tem permissão para mutar membros.")
+        temp = await message.channel.send("❌ Você não tem permissão para mutar membros.")
+        await asyncio.sleep(1.5)
+        await temp.delete()
         return
-    if len(message.mentions) == 0 or len(args < 3):
-        await message.channel.send("Use: `.mute <@user> <minutos> <motivo>`")
+    if len(message.mentions) == 0 or len(args) < 3:
+        temp = await message.channel.send("Use: `.mute <@user> <minutos> <motivo>`")
+        await asyncio.sleep(1.5)
+        await temp.delete()
         return
     target = message.mentions[0]
 
     try:
         minutes = int(args[2])
     except ValueError:
-        await message.channel.send("❌ Duração inválida.")
+        temp = await message.channel.send("❌ Duração inválida.")
+        await asyncio.sleep(1.5)
+        await temp.delete()
         return
 
     if minutes <= 0:
-        await message.channel.send("❌ A duração precisa ser maior que 0.")
+        temp = await message.channel.send("❌ A duração precisa ser maior que 0.")
+        await asyncio.sleep(1.5)
+        await temp.delete()
         return
 
     reason = " ".join(args[3:] if len(args) > 3 else "Sem motivo informado")
@@ -152,7 +161,13 @@ async def handle_mute(message, args):
 
     until = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=minutes)
 
-    await target.timeout(until, reason=reason)
+    try:
+        await target.timeout(until, reason=reason)
+    except:
+        temp = await message.channel.send('❌ Não foi possivel mutar este usuário.')
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
 
     punishment_id = create_punishment(
         target.id,
@@ -174,3 +189,220 @@ async def handle_mute(message, args):
     )
 
     await message.channel.send(embed=embed)
+
+async def handle_purge(message, args):
+    user = message.author
+    channel = message.channel
+
+    if not user.guild_permissions.manage_messages:
+        temp = await channel.send('❌ Você não tem permissão para apagar mensagens.')
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+    
+    if not message.guild.me.guild_permissions.manage_messages:
+        temp = await channel.send('❌ Eu não tenho permissão para apagar mensagens.')
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+    
+    if len(args) < 2:
+        temp = await channel.send('Use: `.purge <quantidade ou all>`')
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+
+    arg = args[1].lower()
+
+    if arg == "all":
+        limit = 2000 
+    else:
+        try:
+            amount = int(arg)
+        except ValueError:
+            temp = await channel.send('❌ Quantidade inválida.')
+            await asyncio.sleep(1.5)
+            await temp.delete()
+            return
+        
+        if amount < 1:
+            temp =await channel.send('❌ A quantidade precisa ser maior que 0.')
+            await asyncio.sleep(1.5)
+            await temp.delete()
+            return
+
+        limit = amount + 1
+    try:
+        deleted = await channel.purge(
+            limit=limit,
+            bulk=True
+        )
+    except discord.HTTPException:
+        temp = await channel.send("❌ Não foi possivel apagar as mensagens.")
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+
+    real_deleted = max(0, len(deleted) - 1)
+
+    temp = await channel.send(
+       f"✅ {real_deleted} mensagens apagadas.")
+
+    await asyncio.sleep(1.5)
+    await temp.delete()
+
+async def handle_kick(message, args):
+    moderator = message.author
+    guild = message.guild
+    channel = message.channel
+
+    if not moderator.guild_permissions.kick_members:
+        temp = await channel.send('❌ Você não tem permissão para expulsar membros.')
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+
+    if len(message.mentions) == 0:
+        temp = await channel.send('Use: `.kick <@user> <motivo>`')
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+    
+    target = message.mentions[0]
+    reason = " ".join(args[2:]) if len (args) > 2 else "Sem motivo informado"
+
+    if target == moderator:
+        temp = await channel.send("❌ Você não pode expulsar a si mesmo.")
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+    
+    if target.top_role >= guild.me.top_role:
+        temp = await channel.send('❌ Eu não consigo expulsar esse membro.')
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+    
+    if target.top_role >= moderator.top_role:
+        temp = await channel.send('❌ Você não consegue expulsar esse membro.')
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+
+    ensure_user(target.id, target.name)
+    ensure_user(moderator.id, moderator.name)
+    ensure_guild(guild.id, guild.name)
+
+    try:
+        await target.kick(reason=reason)
+    except:
+        temp = await channel.send('❌ Não foi possivel expuslar este usuário')
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+
+    punishment_id = create_punishment(
+        target.id,
+        guild.id,
+        "kick",
+        reason
+    )
+
+    embed = discord.Embed(
+        description=f'✅ {target.mention} foi expulso do servidor.',
+        color=0x00FF00
+    )
+    embed.add_field(
+        name="Motivo",
+        value=reason,
+        inline=False
+    )
+    embed.add_field(
+        name="Case",
+        value=f"#{punishment_id}",
+        inline=True
+    )
+    embed.set_author(
+        name=moderator.name,
+        icon_url=moderator.display_avatar.url
+    )
+
+    await channel.send(embed=embed)
+    
+async def handle_ban(message, args):
+    moderator = message.author
+    guild = message.guild
+    channel = message.channel
+
+    if not moderator.guild_permissions.kick_members:
+        temp = await channel.send('❌ Você não tem permissão para banir membros.')
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+
+    if len(message.mentions) == 0:
+        temp = await channel.send('Use: `.ban <@user> <motivo>`')
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+    
+    target = message.mentions[0]
+    reason = " ".join(args[2:]) if len (args) > 2 else "Sem motivo informado"
+
+    if target == moderator:
+        temp = await channel.send("❌ Você não pode banir a si mesmo.")
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+    
+    if target.top_role >= guild.me.top_role:
+        temp = await channel.send('❌ Eu não consigo banir esse membro.')
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+    
+    if target.top_role >= moderator.top_role:
+        temp = await channel.send('❌ Você não consegue banir esse membro.')
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+
+    ensure_user(target.id, target.name)
+    ensure_user(moderator.id, moderator.name)
+    ensure_guild(guild.id, guild.name)
+
+    try:
+        await target.ban(reason=reason)
+    except:
+        temp = await channel.send('❌ Não foi possivel banir este usuário')
+        await asyncio.sleep(1.5)
+        await temp.delete()
+        return
+
+    punishment_id = create_punishment(
+        target.id,
+        guild.id,
+        "ban",
+        reason
+    )
+
+    embed = discord.Embed(
+        description=f'✅ {target.mention} foi banido do servidor.',
+        color=0x00FF00
+    )
+    embed.add_field(
+        name="Motivo",
+        value=reason,
+        inline=False
+    )
+    embed.add_field(
+        name="Case",
+        value=f"#{punishment_id}",
+        inline=True
+    )
+    embed.set_author(
+        name=moderator.name,
+        icon_url=moderator.display_avatar.url
+    )
+
+    await channel.send(embed=embed)
