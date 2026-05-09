@@ -34,6 +34,30 @@ def get_balance(user_id: int, guild_id: int):
 
     return result[0], result[1]
 
+def get_leaderboard(guild_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        select users.username, economy.balance, economy.bank
+        from economy
+        join users
+        on economy.user_id = users.id
+        where economy.guild_id = %s
+        order by economy.balance + economy.bank desc
+        """,(guild_id,)
+    )
+
+    result = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    if result is None:
+        return 0
+    
+    return result
+
 def get_last_work(user_id: int, guild_id: int):
     conn = get_connection()
     cursor = conn.cursor()

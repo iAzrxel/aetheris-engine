@@ -1,4 +1,4 @@
-from services.economy_service import ensure_account, get_balance, get_last_work, update_work, deposit_money, withdraw_money, rob_user, create_fine, get_active_fines, pay_fines, get_unpaid_fines_total
+from services.economy_service import ensure_account, get_balance, get_last_work, update_work, deposit_money, withdraw_money, rob_user, create_fine, get_active_fines, pay_fines, get_unpaid_fines_total, get_leaderboard
 from services.moderation_service import ensure_user, ensure_guild
 import discord
 import datetime
@@ -42,6 +42,29 @@ async def handle_balance(message):
         inline=True
     )
     await message.channel.send(embed=embed)
+
+async def handle_leaderboard(message):
+    guild_id = message.guild.id
+    leaderboard  = get_leaderboard(guild_id)
+
+    if not leaderboard:
+        await message.channel.send(f"Ninguém no leaderboard ainda!")
+        return
+    
+    text = ""
+
+    for index, (name, bal, bank) in enumerate(leaderboard, start=1):
+        total = bal + bank
+        text += f"**{index}.** {name} • ${total:,}\n"
+
+    embed = discord.Embed(
+        title="Leaderboard",
+        description=text,
+        color=discord.Color.gold()
+    )
+
+    await message.channel.send(embed=embed)
+    return
 
 async def handle_work(message):
     user = message.author
@@ -148,7 +171,7 @@ async def handle_deposit(message, args):
            await message.channel.send(embed=embed)
            return
         
-        embed = discord.Embed(description=f'✅ Depositou ${amount} no seu banco!', color=0x00FF00)
+        embed = discord.Embed(description=f'✅ Depositou ${amount:,} no seu banco!', color=0x00FF00)
         embed.set_author(
             name=user.name,
             icon_url=user.display_avatar.url
@@ -223,7 +246,7 @@ async def handle_withdraw(message, args):
        await message.channel.send(embed=embed)
        return
 
-    embed = discord.Embed(description=f'✅ Retirou ${amount} do seu banco!', color=0x00FF00)
+    embed = discord.Embed(description=f'✅ Retirou ${amount:,} do seu banco!', color=0x00FF00)
     embed.set_author(
     name=user.name,
     icon_url=user.display_avatar.url

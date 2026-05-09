@@ -9,7 +9,7 @@ from cogs.moderation import (
     handle_kick,
     handle_ban
 ) 
-from cogs.economy import handle_balance, handle_work, handle_deposit, handle_withdraw, handle_rob_user, handle_fines, handle_pay_fines
+from cogs.economy import handle_balance, handle_work, handle_deposit, handle_withdraw, handle_rob_user, handle_fines, handle_pay_fines, handle_leaderboard
 from cogs.tickets import handle_create_ticket
 
 intents = discord.Intents.default()
@@ -139,5 +139,9 @@ async def on_message(message: discord.Message):
         args = message.content.split()
         await handle_ban(message, args)
         return
+    
+    if command in ["lb", "leaderboard"]:
+        await handle_leaderboard(message)
+
     
 client.run(Config.DISCORD_TOKEN)
