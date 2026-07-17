@@ -14,4 +14,4 @@ class Config:
     DB_NAME: str = os.getenv("DB_NAME", "aetheris")
 
     if not DISCORD_TOKEN:
-        raise RuntimeError("DISCORD_TOKEN não encontrado no .env")
+        raise RuntimeError("DISCORD_TOKEN não configurado")

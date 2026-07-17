@@ -56,19 +56,12 @@ async def on_message(message: discord.Message):
 
     if message.guild is None:
         return
-
-    if message.channel.name != AETHERIS_CHANNEL_NAME:
-        return
-
+    
     content = message.content.strip()
-
-    if content.lower() == "ping":
-        await message.channel.send(f"Pong {message.author.mention}! me chamou?")
-        return
 
     if not content.startswith(Config.PREFIX):
         return
-
+    
     args = content[len(Config.PREFIX):].split()
 
     if len(args) == 0:
@@ -76,6 +69,20 @@ async def on_message(message: discord.Message):
 
     command = args[0].lower()
 
+    if command == "ticket":
+        await handle_create_ticket(message)
+        return
+    
+    if command == "mute":
+        args = message.content.split()
+        await handle_mute(message, args)
+        return
+    
+    if command == "purge":
+        args = message.content.split()
+        await handle_purge(message, args)
+        return
+    
     if command == "warn":
         await handle_warn(message, args, client)
         return
@@ -83,6 +90,14 @@ async def on_message(message: discord.Message):
     if command == "warnings":
         await handle_warnings(message)
         return
+    
+    if message.channel.name != AETHERIS_CHANNEL_NAME:
+        return
+
+    if content.lower() == "ping":
+        await message.channel.send(f"Pong {message.author.mention}! me chamou?")
+        return
+
 
     if command == "clearwarns":
         await handleclear_warns(message)
@@ -114,20 +129,6 @@ async def on_message(message: discord.Message):
     
     if command == "payfines":
         await handle_pay_fines(message)
-        return
-    
-    if command == "ticket":
-        await handle_create_ticket(message)
-        return
-    
-    if command == "mute":
-        args = message.content.split()
-        await handle_mute(message, args)
-        return
-    
-    if command == "purge":
-        args = message.content.split()
-        await handle_purge(message, args)
         return
     
     if command == "kick":

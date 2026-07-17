@@ -117,7 +117,7 @@ class TicketView(discord.ui.View):
         is_staff = staff_role in interaction.user.roles if staff_role else False
 
         if not is_owner and not is_staff:
-            await interaction.respnse.send_message(
+            await interaction.response.send_message(
                 "❌ Apenas membros da staff podem fechar esse ticket.",
                 ephemeral = True
             )
